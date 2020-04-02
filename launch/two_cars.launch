@@ -1,0 +1,23 @@
+<launch>
+    <!-- Set to 1 if you want to run the map_server -->
+    <arg name="map_server" default="1"/>
+    <arg name="map_file" default="$(find mushr_sim)/maps/real-floor0.yaml" />
+    <arg name="environment" default="two_cars" />
+
+    <include file="$(find mushr_sim)/launch/keyboard_teleop.launch.xml"/>
+
+    <!--launch-prefix="xterm -e gdb - -args" -->
+    <node pkg="mushr_mujoco_ros" name="mushr_mujoco_ros" type="mushr_mujoco_ros_node" output="screen">
+        <param name="mj_key" value="~/.mujoco/mjkey.txt" />
+        <param name="model_file_path" value="$(find mushr_mujoco_ros)/models/$(arg environment).xml" />
+        <param name="config_file_path" value="$(find mushr_mujoco_ros)/config/$(arg environment).yaml" />
+        <param name="viz" value="true" />
+    </node>
+
+    <!-- Launch  map server-->
+    <group if="$(arg map_server)">
+        <include file="$(find mushr_sim)/launch/map_server.launch">
+            <arg name="map" value="$(arg map_file)" />
+        </include>
+    </group>
+</launch>

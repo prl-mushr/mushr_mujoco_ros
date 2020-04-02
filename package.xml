@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>mushr_mujoco_ros</name>
+  <version>0.0.0</version>
+  <description>The a rosnode that simulates one or more MuSHR cars</description>
+
+  <maintainer email="rockettm@cs.washington.edu">rockettm</maintainer>
+
+  <license>BSD-3</license>
+
+  <url type="website">https://mushr.io</url>
+
+  <author email="rockettm@cs.washington.edu">rockettm</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>message_generation</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>ackermann_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>
