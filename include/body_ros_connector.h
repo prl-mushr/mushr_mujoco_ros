@@ -6,6 +6,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <mushr_mujoco_ros/BodyState.h>
 
 namespace mushr_mujoco_ros {
 
@@ -15,6 +16,7 @@ class BodyROSConnector
     BodyROSConnector(ros::NodeHandle* nh, const YAML::Node& e);
 
     void send_state();
+    void set_body_state(mushr_mujoco_ros::BodyState& bs);
 
   protected:
     ros::NodeHandle* nh_;
@@ -27,7 +29,7 @@ class BodyROSConnector
     void initpose_cb(const geometry_msgs::PoseWithCovarianceStampedConstPtr& pose);
     std::string pvt_name(
         std::string name); // couldn't get private node handles working, so kludge.
-};                         // class BodyROSConnector
+};
 
 } // namespace mushr_mujoco_ros
 

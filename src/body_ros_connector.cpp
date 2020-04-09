@@ -60,6 +60,18 @@ void BodyROSConnector::send_state()
     mjglobal::mjdata_unlock();
 }
 
+void BodyROSConnector::set_body_state(mushr_mujoco_ros::BodyState& bs)
+{
+    bs.name = body_name_;
+
+    mjModel* m = mjglobal::mjmodel();
+    mjData* d = mjglobal::mjdata_lock();
+
+    mushr_mujoco_util::mj2ros_body(m, d, body_name_.c_str(), bs.pose);
+
+    mjglobal::mjdata_unlock();
+}
+
 void BodyROSConnector::initpose_cb(
     const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {

@@ -8,6 +8,8 @@
 #include "mushr_ros_connector.h"
 #include "simple_viz.h"
 
+#include "mushr_mujoco_ros/BodyStateArray.h"
+
 bool mj_sim_pause = false;
 
 int main(int argc, char** argv)
@@ -94,6 +96,9 @@ int main(int argc, char** argv)
         }
     }
 
+    ros::Publisher body_state_pub
+        = nh.advertise<mushr_mujoco_ros::BodyStateArray>("body_state", 10);
+
     if (do_viz)
     {
         ROS_INFO("Starting visualization");
@@ -125,12 +130,35 @@ int main(int argc, char** argv)
             }
         }
 
-        mjglobal::mjdata_unlock();
+        mushr_mujoco_ros::BodyStateArray body_state;
+        body_state.simtime = d->time;
+        body_state.header.stamp = ros::Time::now();
 
-        for (auto cc : car_conn)
+        int i = 0;
+        for (int j = 0; i < car_conn.size(); i++)
+        {
+            auto cc = car_conn[j];
             cc->send_state();
-        for (auto bc : body_conn)
+
+            mushr_mujoco_ros::BodyState bs;
+            cc->set_body_state(bs);
+            body_state.states.push_back(bs);
+            i++;
+        }
+        for (int j = 0; j < body_conn.size(); j++)
+        {
+            auto bc = body_conn[j];
             bc->send_state();
+
+            mushr_mujoco_ros::BodyState bs;
+            bc->set_body_state(bs);
+            body_state.states.push_back(bs);
+            i++;
+        }
+
+        body_state_pub.publish(body_state);
+
+        mjglobal::mjdata_unlock();
 
         if (do_viz)
             viz::display();

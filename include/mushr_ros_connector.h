@@ -24,6 +24,7 @@ class MuSHRROSConnector : public BodyROSConnector
 
     void mujoco_controller();
     void send_state();
+    void set_body_state(mushr_mujoco_ros::BodyState& bs);
 
   protected:
     ros::Subscriber control_sub_;

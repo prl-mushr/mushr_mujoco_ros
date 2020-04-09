@@ -55,9 +55,11 @@ pkg_search_module(yaml-cpp REQUIRED yaml-cpp)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 # Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-# )
+add_message_files(
+  FILES
+  BodyState.msg
+  BodyStateArray.msg
+)
 
 # Generate services in the 'srv' folder
 # add_service_files(
@@ -72,13 +74,13 @@ pkg_search_module(yaml-cpp REQUIRED yaml-cpp)
 # )
 
 # Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-#   geometry_msgs
-#   ackermann_msgs
-#   sensor_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+  ackermann_msgs
+  sensor_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

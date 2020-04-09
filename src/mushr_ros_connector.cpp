@@ -37,6 +37,18 @@ void MuSHRROSConnector::send_state()
     send_sensor_state();
 }
 
+void MuSHRROSConnector::set_body_state(mushr_mujoco_ros::BodyState& bs)
+{
+    BodyROSConnector::set_body_state(bs);
+
+    bs.ctrl_steering_angle = steering_angle_;
+    bs.ctrl_velocity = velocity_;
+    mjData* d = mjglobal::mjdata_lock();
+    get_gyro(d, bs.imu);
+    get_velocimeter(d, bs.velocity);
+    mjglobal::mjdata_unlock();
+}
+
 void MuSHRROSConnector::mujoco_controller()
 {
     mjData* d = mjglobal::mjdata_lock();
