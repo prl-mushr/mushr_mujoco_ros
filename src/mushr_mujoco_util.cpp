@@ -79,7 +79,7 @@ void mj2ros_body(
 void ros2mj_body(
     const mjModel* m, mjData* d, const char* name, const geometry_msgs::Pose& ros_pose)
 {
-    int bodyid, jntid, jntqposid;
+    int bodyid, jntid, jntqposid, jntdofid;
 
     if ((bodyid = mj_name2id(m, mjOBJ_BODY, name)) < 0)
     {
@@ -97,6 +97,9 @@ void ros2mj_body(
     d->qpos[jntqposid + 4] = ros_pose.orientation.x;
     d->qpos[jntqposid + 5] = ros_pose.orientation.y;
     d->qpos[jntqposid + 6] = ros_pose.orientation.z;
+
+    jntdofid = m->jnt_dofadr[jntid];
+    mju_zero(&d->qvel[jntdofid], 6);
 }
 
 bool is_paused()
