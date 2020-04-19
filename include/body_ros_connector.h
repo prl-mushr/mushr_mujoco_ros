@@ -18,6 +18,11 @@ class BodyROSConnector
     void send_state();
     void set_body_state(mushr_mujoco_ros::BodyState& bs);
 
+    const std::string& body_name()
+    {
+        return body_name_;
+    }
+
   protected:
     ros::NodeHandle* nh_;
     ros::Publisher pose_pub_;

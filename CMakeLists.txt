@@ -57,14 +57,16 @@ pkg_search_module(yaml-cpp REQUIRED yaml-cpp)
 # Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  AckermannDriveArray.msg
   BodyState.msg
   BodyStateArray.msg
 )
 
 # Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-# )
+add_service_files(
+  FILES
+  Rollout.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(

@@ -1,0 +1,9 @@
+uint32 K
+uint32 T
+float32 dt
+mushr_mujoco_ros/AckermannDriveArray[] ctrls
+string car_name
+string block_name
+---
+geometry_msgs/PoseArray[] car_poses
+geometry_msgs/PoseArray[] block_poses

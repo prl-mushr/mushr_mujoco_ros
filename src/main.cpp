@@ -6,6 +6,7 @@
 #include "mjglobal.h"
 #include "mushr_mujoco_util.h"
 #include "mushr_ros_connector.h"
+#include "rollout.h"
 #include "simple_viz.h"
 
 #include "mushr_mujoco_ros/BodyStateArray.h"
@@ -69,8 +70,8 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    std::vector<mushr_mujoco_ros::MuSHRROSConnector*> car_conn;
-    std::vector<mushr_mujoco_ros::BodyROSConnector*> body_conn;
+    std::map<std::string, mushr_mujoco_ros::MuSHRROSConnector*> car_conn;
+    std::map<std::string, mushr_mujoco_ros::BodyROSConnector*> body_conn;
 
     ROS_INFO("Loading car configuration");
     // Load car info
@@ -79,8 +80,10 @@ int main(int argc, char** argv)
         YAML::Node car_cfg = config["cars"];
         for (int i = 0; i < car_cfg.size(); i++)
         {
-            car_conn.push_back(
-                new mushr_mujoco_ros::MuSHRROSConnector(&nh, car_cfg[i]));
+            auto mrc = new mushr_mujoco_ros::MuSHRROSConnector(&nh, car_cfg[i]);
+            car_conn.insert(
+                std::pair<std::string, mushr_mujoco_ros::MuSHRROSConnector*>(
+                    mrc->body_name(), mrc));
         }
     }
 
@@ -91,8 +94,10 @@ int main(int argc, char** argv)
         YAML::Node bodies_cfg = config["bodies"];
         for (int i = 0; i < bodies_cfg.size(); i++)
         {
-            body_conn.push_back(
-                new mushr_mujoco_ros::BodyROSConnector(&nh, bodies_cfg[i]));
+            auto brc = new mushr_mujoco_ros::BodyROSConnector(&nh, bodies_cfg[i]);
+            body_conn.insert(
+                std::pair<std::string, mushr_mujoco_ros::BodyROSConnector*>(
+                    brc->body_name(), brc));
         }
     }
 
@@ -104,6 +109,8 @@ int main(int argc, char** argv)
         ROS_INFO("Starting visualization");
         viz::init();
     }
+
+    rollout::init(&nh, &car_conn, &body_conn);
 
     mjModel* m = mjglobal::mjmodel();
     mjData* d = NULL;
@@ -125,7 +132,7 @@ int main(int argc, char** argv)
             {
                 mj_step1(m, d);
                 for (auto cc : car_conn)
-                    cc->mujoco_controller();
+                    cc.second->mujoco_controller();
                 mj_step2(m, d);
             }
         }
@@ -134,26 +141,21 @@ int main(int argc, char** argv)
         body_state.simtime = d->time;
         body_state.header.stamp = ros::Time::now();
 
-        int i = 0;
-        for (int j = 0; i < car_conn.size(); i++)
+        for (auto cc : car_conn)
         {
-            auto cc = car_conn[j];
-            cc->send_state();
+            cc.second->send_state();
 
             mushr_mujoco_ros::BodyState bs;
-            cc->set_body_state(bs);
+            cc.second->set_body_state(bs);
             body_state.states.push_back(bs);
-            i++;
         }
-        for (int j = 0; j < body_conn.size(); j++)
+        for (auto bc : car_conn)
         {
-            auto bc = body_conn[j];
-            bc->send_state();
+            bc.second->send_state();
 
             mushr_mujoco_ros::BodyState bs;
-            bc->set_body_state(bs);
+            bc.second->set_body_state(bs);
             body_state.states.push_back(bs);
-            i++;
         }
 
         body_state_pub.publish(body_state);
@@ -168,9 +170,9 @@ int main(int argc, char** argv)
     }
 
     for (auto cc : car_conn)
-        delete cc;
+        delete cc.second;
     for (auto bc : body_conn)
-        delete bc;
+        delete bc.second;
 
     // free MuJoCo model and data, deactivate
     mjglobal::delete_model_and_data();

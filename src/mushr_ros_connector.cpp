@@ -52,11 +52,14 @@ void MuSHRROSConnector::set_body_state(mushr_mujoco_ros::BodyState& bs)
 void MuSHRROSConnector::mujoco_controller()
 {
     mjData* d = mjglobal::mjdata_lock();
+    apply_control(d, velocity_, steering_angle_);
+    mjglobal::mjdata_unlock();
+}
 
+void MuSHRROSConnector::apply_control(mjData* d, mjtNum vel, mjtNum steering_angle)
+{
     d->ctrl[velocity_ctrl_idx_] = velocity_;
     d->ctrl[steering_angle_ctrl_idx_] = steering_angle_;
-
-    mjglobal::mjdata_unlock();
 }
 
 void MuSHRROSConnector::control_cb(

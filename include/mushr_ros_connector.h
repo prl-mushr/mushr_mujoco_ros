@@ -23,6 +23,7 @@ class MuSHRROSConnector : public BodyROSConnector
     MuSHRROSConnector(ros::NodeHandle* nh, const YAML::Node& e);
 
     void mujoco_controller();
+    void apply_control(mjData* d, mjtNum vel, mjtNum steering_angle);
     void send_state();
     void set_body_state(mushr_mujoco_ros::BodyState& bs);
 
@@ -50,7 +51,7 @@ class MuSHRROSConnector : public BodyROSConnector
 
     // Takes a name, and adds the unique modifier to find it in the Mujoco DOM
     std::string car_ref(std::string);
-}; // class MuSHRROSConnector
+};
 
 } // namespace mushr_mujoco_ros
 
