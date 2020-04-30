@@ -6,43 +6,19 @@ namespace mushr_mujoco_ros {
 
 BodyROSConnector::BodyROSConnector(ros::NodeHandle* nh, const YAML::Node& e)
 {
-    if (!e["name"])
-    {
-        ROS_FATAL("No 'name' for some element");
-        exit(1);
-    }
-    body_name_ = e["name"].as<std::string>();
-
     nh_ = nh;
 
-    std::string pose_topic = "pose";
-    if (e["pose_topic"])
-    {
-        pose_topic = e["pose_topic"].as<std::string>();
-    }
-    ROS_INFO("pose topic resolve %s", nh_->resolveName(pvt_name(pose_topic)).c_str());
-    pose_pub_ = nh_->advertise<geometry_msgs::PoseStamped>(pvt_name(pose_topic), 10);
+    std::string pose_topic, initpose_topic;
+    mushr_mujoco_util::load_config(
+        e, body_name_, pose_topic, initpose_topic, parent_body_name_);
 
-    std::string initpose_topic = "initialpose";
-    if (e["initialpose_topic"])
-    {
-        initpose_topic = e["initialpose_topic"].as<std::string>();
-    }
+    pose_pub_ = nh_->advertise<geometry_msgs::PoseStamped>(
+        mushr_mujoco_util::pvt_name(body_name_, pose_topic), 10);
     initpose_sub_ = nh_->subscribe(
-        pvt_name(initpose_topic), 1, &BodyROSConnector::initpose_cb, this);
-
-    mjModel* m = mjglobal::mjmodel();
-    body_id_ = mushr_mujoco_util::mj_name2id_ordie(m, mjOBJ_BODY, body_name_);
-
-    int parent_body_id = m->body_parentid[body_id_];
-    if (parent_body_id == 0)
-    {
-        parent_body_name_ = "map";
-    }
-    else
-    {
-        std::string parent_body_name_(mj_id2name(m, mjOBJ_BODY, parent_body_id));
-    }
+        mushr_mujoco_util::pvt_name(body_name_, initpose_topic),
+        1,
+        &BodyROSConnector::initpose_cb,
+        this);
 }
 
 void BodyROSConnector::send_state()
@@ -72,8 +48,7 @@ void BodyROSConnector::set_body_state(mushr_mujoco_ros::BodyState& bs)
     mjglobal::mjdata_unlock();
 }
 
-void BodyROSConnector::initpose_cb(
-    const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
+void BodyROSConnector::set_pose(const geometry_msgs::Pose& pose)
 {
     mjModel* m = mjglobal::mjmodel();
     mjData* d = mjglobal::mjdata_lock();
@@ -82,21 +57,22 @@ void BodyROSConnector::initpose_cb(
         "[%s]   init pose: Position(%.3f, %.3f, %.3f), Orientation(%.3f, "
         "%.3f, %.3f, %.3f)",
         body_name_.c_str(),
-        msg->pose.pose.position.x,
-        msg->pose.pose.position.y,
-        msg->pose.pose.position.z,
-        msg->pose.pose.orientation.x,
-        msg->pose.pose.orientation.y,
-        msg->pose.pose.orientation.z,
-        msg->pose.pose.orientation.w);
-    mushr_mujoco_util::ros2mj_body(m, d, body_name_.c_str(), msg->pose.pose);
+        pose.position.x,
+        pose.position.y,
+        pose.position.z,
+        pose.orientation.x,
+        pose.orientation.y,
+        pose.orientation.z,
+        pose.orientation.w);
+    mushr_mujoco_util::ros2mj_body(m, d, body_name_.c_str(), pose);
 
     mjglobal::mjdata_unlock();
 }
 
-std::string BodyROSConnector::pvt_name(std::string name)
+void BodyROSConnector::initpose_cb(
+    const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
-    return body_name_ + "/" + name;
+    set_pose(msg->pose.pose);
 }
 
 } // namespace mushr_mujoco_ros

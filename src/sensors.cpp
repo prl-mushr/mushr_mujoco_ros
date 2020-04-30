@@ -9,9 +9,10 @@ namespace mushr_mujoco_ros {
 
 void MuSHRROSConnector::init_sensors()
 {
-    imu_pub_ = nh_->advertise<sensor_msgs::Imu>(pvt_name("car_imu"), 10);
-    velocity_pub_
-        = nh_->advertise<geometry_msgs::Vector3Stamped>(pvt_name("velocimeter"), 10);
+    imu_pub_ = nh_->advertise<sensor_msgs::Imu>(
+        mushr_mujoco_util::pvt_name(body_name_, "car_imu"), 10);
+    velocity_pub_ = nh_->advertise<geometry_msgs::Vector3Stamped>(
+        mushr_mujoco_util::pvt_name(body_name_, "velocimeter"), 10);
 
     mjModel* m = mjglobal::mjmodel();
 

@@ -1,0 +1,4 @@
+string[] body_names
+geometry_msgs/Pose[] init_state
+---
+mushr_mujoco_ros/BodyStateArray body_state

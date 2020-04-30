@@ -17,7 +17,7 @@
 
 namespace mushr_mujoco_ros {
 
-class MuSHRROSConnector : public BodyROSConnector
+class MuSHRROSConnector
 {
   public:
     MuSHRROSConnector(ros::NodeHandle* nh, const YAML::Node& e);
@@ -26,8 +26,17 @@ class MuSHRROSConnector : public BodyROSConnector
     void apply_control(mjData* d, mjtNum vel, mjtNum steering_angle);
     void send_state();
     void set_body_state(mushr_mujoco_ros::BodyState& bs);
+    void set_pose(const geometry_msgs::Pose& pose);
 
-  protected:
+    const std::string& body_name()
+    {
+        return body_name_;
+    }
+
+  private:
+    ros::NodeHandle* nh_;
+    ros::Publisher pose_pub_;
+    ros::Subscriber initpose_sub_;
     ros::Subscriber control_sub_;
     ros::Publisher imu_pub_;
     ros::Publisher velocity_pub_;
@@ -36,13 +45,17 @@ class MuSHRROSConnector : public BodyROSConnector
     int vel_idx_, vel_addr_;
     mjtNum accel_noise_, gyro_noise_, vel_noise_;
 
+    std::string parent_body_name_;
+    std::string base_link_site_name_;
+    std::string body_name_;
+
     mjtNum velocity_;
     mjtNum steering_angle_;
     int velocity_ctrl_idx_;
     int steering_angle_ctrl_idx_;
 
     void control_cb(const ackermann_msgs::AckermannDriveStampedConstPtr&);
-    void initial_pose_cb(const geometry_msgs::PoseWithCovarianceStampedConstPtr&);
+    void initpose_cb(const geometry_msgs::PoseWithCovarianceStampedConstPtr&);
     void init_sensors(void);
     void send_sensor_state(void);
     int get_velocimeter(const mjData*, geometry_msgs::Vector3&);

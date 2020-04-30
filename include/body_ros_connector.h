@@ -17,19 +17,21 @@ class BodyROSConnector
 
     void send_state();
     void set_body_state(mushr_mujoco_ros::BodyState& bs);
+    void set_pose(const geometry_msgs::Pose& pose);
 
     const std::string& body_name()
     {
         return body_name_;
     }
 
-  protected:
+  private:
     ros::NodeHandle* nh_;
     ros::Publisher pose_pub_;
     ros::Subscriber initpose_sub_;
+
     std::string body_name_;
-    int body_id_;
     std::string parent_body_name_;
+    int body_id_;
 
     void initpose_cb(const geometry_msgs::PoseWithCovarianceStampedConstPtr& pose);
     std::string pvt_name(

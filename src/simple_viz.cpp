@@ -1,8 +1,9 @@
 #include "simple_viz.h"
 
 #include "mjglobal.h"
+#include "mushr_mujoco_util.h"
 
-extern bool mj_sim_pause;
+extern bool mj_sim_pause_from_viz;
 
 namespace viz {
 
@@ -75,7 +76,7 @@ void display()
 
     mjglobal::mjdata_unlock();
 
-    if (mj_sim_pause)
+    if (mj_sim_pause_from_viz)
     {
         mjr_overlay(mjFONT_BIG, mjGRID_TOPRIGHT, viewport, "Paused", NULL, &con);
     }
@@ -125,7 +126,7 @@ void display_local(mjModel* m, mjData* d)
     mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
     mjr_render(viewport, &scn, &con);
 
-    if (mj_sim_pause)
+    if (mj_sim_pause_from_viz)
     {
         mjr_overlay(mjFONT_BIG, mjGRID_TOPRIGHT, viewport, "Paused", NULL, &con);
     }
@@ -146,15 +147,14 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods)
     // backspace: reset simulation
     if (act == GLFW_PRESS && key == GLFW_KEY_BACKSPACE)
     {
-        mj_resetData(m, d);
-        mj_forward(m, d);
+        mushr_mujoco_util::reset(m, d);
     }
 
     mjglobal::mjdata_unlock();
 
     if (act == GLFW_PRESS && key == GLFW_KEY_SPACE)
     {
-        mj_sim_pause = !mj_sim_pause;
+        mj_sim_pause_from_viz = !mj_sim_pause_from_viz;
     }
 }
 

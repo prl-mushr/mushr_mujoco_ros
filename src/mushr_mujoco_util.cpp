@@ -1,6 +1,7 @@
 #include <wordexp.h>
 
 #include <tf2/LinearMath/Quaternion.h>
+#include "mjglobal.h"
 #include "ros/ros.h"
 
 #include "geometry_msgs/Point.h"
@@ -8,7 +9,8 @@
 
 #include "mushr_mujoco_util.h"
 
-extern bool mj_sim_pause;
+bool mj_sim_pause_from_viz = false;
+bool mj_sim_pause_for_ctrl = false;
 
 namespace mushr_mujoco_util {
 
@@ -37,6 +39,43 @@ void init_mj(const ros::NodeHandle* nh)
     }
 }
 
+void load_config(
+    const YAML::Node& e,
+    std::string& body_name,
+    std::string& pose_topic,
+    std::string& initpose_topic,
+    std::string& parent_body_name)
+{
+    if (!e["name"])
+    {
+        ROS_FATAL("No 'name' for some element");
+        exit(1);
+    }
+    body_name = e["name"].as<std::string>();
+
+    pose_topic = "pose";
+    if (e["pose_topic"])
+    {
+        pose_topic = e["pose_topic"].as<std::string>();
+    }
+
+    initpose_topic = "initialpose";
+    if (e["initialpose_topic"])
+    {
+        initpose_topic = e["initialpose_topic"].as<std::string>();
+    }
+
+    mjModel* m = mjglobal::mjmodel();
+    int body_id = mushr_mujoco_util::mj_name2id_ordie(m, mjOBJ_BODY, body_name);
+
+    int parent_body_id = m->body_parentid[body_id];
+    parent_body_name = "map";
+    if (parent_body_id != 0)
+    {
+        std::string parent_body_name(mj_id2name(m, mjOBJ_BODY, parent_body_id));
+    }
+}
+
 mjtNum mj_name2id_ordie(const mjModel* m, int type, const std::string& name)
 {
     return mj_name2id_ordie(m, type, name.c_str());
@@ -51,6 +90,80 @@ mjtNum mj_name2id_ordie(const mjModel* m, int type, const char* name)
         exit(1);
     }
     return idx;
+}
+
+void mj2ros_site(
+    const mjModel* m,
+    mjData* d,
+    const char* site_name,
+    const char* body_name,
+    geometry_msgs::Pose& ros_pose)
+{
+    int siteid;
+    mjtNum pos[3], quat[4];
+
+    if ((siteid = mj_name2id(m, mjOBJ_SITE, site_name)) < 0)
+    {
+        ROS_INFO("Couldn't find site '%s' ID", site_name);
+        return;
+    }
+
+    mj2ros_body(m, d, body_name, ros_pose);
+
+    mjtNum bodyq[]{
+        ros_pose.orientation.w,
+        ros_pose.orientation.x,
+        ros_pose.orientation.y,
+        ros_pose.orientation.z,
+    };
+    mju_rotVecQuat(pos, &m->site_pos[3 * siteid], bodyq);
+    ros_pose.position.x += pos[0];
+    ros_pose.position.y += pos[1];
+    ros_pose.position.z += pos[2];
+
+    mju_mulQuat(quat, &m->site_quat[4 * siteid], bodyq);
+    ros_pose.orientation.w = quat[0];
+    ros_pose.orientation.x = quat[1];
+    ros_pose.orientation.y = quat[2];
+    ros_pose.orientation.z = quat[3];
+}
+
+void ros2mj_site(
+    const mjModel* m,
+    mjData* d,
+    const char* site_name,
+    const char* body_name,
+    geometry_msgs::Pose ros_pose)
+{
+    int siteid;
+    mjtNum pos[3], quat[4];
+
+    if ((siteid = mj_name2id(m, mjOBJ_SITE, site_name)) < 0)
+    {
+        ROS_INFO("Couldn't find site '%s' ID", site_name);
+        return;
+    }
+
+    mjtNum bodyq[]{
+        ros_pose.orientation.w,
+        ros_pose.orientation.x,
+        ros_pose.orientation.y,
+        ros_pose.orientation.z,
+    };
+    mju_rotVecQuat(pos, &m->site_pos[3 * siteid], bodyq);
+    ros_pose.position.x -= pos[0];
+    ros_pose.position.y -= pos[1];
+
+    // RVIZ publishes in R^2, so we'll have a hard time with Z offsets.
+    // ros_pose.position.z -= pos[2];
+
+    mju_mulQuat(quat, &m->site_quat[4 * siteid], bodyq);
+    ros_pose.orientation.w = quat[0];
+    ros_pose.orientation.x = quat[1];
+    ros_pose.orientation.y = quat[2];
+    ros_pose.orientation.z = quat[3];
+
+    ros2mj_body(m, d, body_name, ros_pose);
 }
 
 void mj2ros_body(
@@ -102,9 +215,20 @@ void ros2mj_body(
     mju_zero(&d->qvel[jntdofid], 6);
 }
 
+void reset(mjModel* m, mjData* d)
+{
+    mj_resetData(m, d);
+    mj_forward(m, d);
+}
+
 bool is_paused()
 {
-    return mj_sim_pause;
+    return mj_sim_pause_from_viz || mj_sim_pause_for_ctrl;
+}
+
+std::string pvt_name(const std::string& body_name, const std::string& topic_name)
+{
+    return body_name + "/" + topic_name;
 }
 
 } // mushr_mujoco_util

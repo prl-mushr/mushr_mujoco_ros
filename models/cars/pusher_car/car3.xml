@@ -23,6 +23,7 @@
 
       <camera name="car3_realsense_d435i" mode="fixed" pos="-0.005 0 .165" euler="0 4.712 4.712"/>
       <site name="car3_imu" pos="-0.005 0 .165"/>
+      <site name="car3_base_link" pos="-0.1575 0 0.05"/>
 
       <geom pos="0 0 0.094655" type="mesh" mass="3.542137" mesh="car3_mushr_base_nano"/>
       <geom name="car3_realsense_d435i" size="0.012525 0.045 0.0125" pos="0.0123949 0 0.162178" mass="0.072" type="box"/>
@@ -62,7 +63,7 @@
     </body>
   </worldbody>
   <actuator>
-    <position class="car3_steering" kp="25.0" name="car3_steering_pos" joint="car3_steering_wheel"/>
+    <position class="car3_steering" kp="5.0" name="car3_steering_pos" joint="car3_steering_wheel"/>
     <velocity kv="100" gear="0.04" forcelimited="true" forcerange="-500 500" name="car3_throttle_velocity" tendon="car3_throttle"/>
   </actuator>
   <equality>

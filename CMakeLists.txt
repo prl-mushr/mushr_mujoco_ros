@@ -66,6 +66,9 @@ add_message_files(
 add_service_files(
   FILES
   Rollout.srv
+  Step.srv
+  GetState.srv
+  Reset.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -174,10 +177,16 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 file(GLOB SOURCES src/*.cpp)
 list(FILTER SOURCES EXCLUDE REGEX "src/.*main.cpp$")
-file(GLOB LIB src/*.cpp)
+file(GLOB LIB include/*.h)
 
 add_executable(${PROJECT_NAME}_node
     src/main.cpp
+    ${SOURCES}
+    ${LIB}
+)
+
+add_executable(${PROJECT_NAME}_block_buddy
+    src/block_buddy_main.cpp
     ${SOURCES}
     ${LIB}
 )
@@ -191,14 +200,27 @@ add_executable(${PROJECT_NAME}_node
 # Add cmake target dependencies of the executable
 # same as for the library above
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_block_buddy ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_NAME}_node OpenMP::OpenMP_CXX)
+    target_link_libraries(${PROJECT_NAME}_block_buddy OpenMP::OpenMP_CXX)
 endif()
 
 # Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+  ${LIB_MUJOCO}
+  ${yaml-cpp_LIBRARIES}
+  GL
+  GLU
+  glut
+  libglew.so
+  libglfw.so
+)
+
+target_link_libraries(${PROJECT_NAME}_block_buddy
   ${catkin_LIBRARIES}
   ${LIB_MUJOCO}
   ${yaml-cpp_LIBRARIES}

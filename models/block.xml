@@ -3,7 +3,7 @@
 <mujoco model="mushr_nano">
   <compiler angle="radian" />
   <size njmax="500" nconmax="100"/>
-  <option timestep="0.01"/>
+  <option timestep="0.008333"/>
   <include file="cars/pusher_car/buddy.xml"/>
   <asset>
     <texture name="texplane" type="2d" builtin="checker" rgb1="0.26 0.12 0.36" rgb2="0.23 0.09 0.33" width="512" height="512" mark="cross" markrgb=".8 .8 .8"/>

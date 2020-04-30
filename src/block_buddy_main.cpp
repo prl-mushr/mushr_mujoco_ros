@@ -10,44 +10,9 @@
 #include "simple_viz.h"
 
 #include "mushr_mujoco_ros/BodyStateArray.h"
+#include "mushr_mujoco_ros/GetState.h"
+#include "mushr_mujoco_ros/Reset.h"
 #include "mushr_mujoco_ros/Step.h"
-
-extern bool mj_sim_pause_for_ctrl;
-
-void step_sim(
-    mjModel* m,
-    mjData* d,
-    float maxrate,
-    std::map<std::string, mushr_mujoco_ros::MuSHRROSConnector*>& car_conn,
-    std::map<std::string, mushr_mujoco_ros::BodyROSConnector*>& body_conn)
-{
-    mjtNum simstart = d->time;
-    if (!mushr_mujoco_util::is_paused())
-    {
-        while (d->time - simstart < 1.0 / maxrate)
-        {
-            mj_step1(m, d);
-            for (auto cc : car_conn)
-                cc.second->mujoco_controller();
-            mj_step2(m, d);
-        }
-        mj_sim_pause_for_ctrl = true;
-    }
-}
-
-void send_individual_state(
-    std::map<std::string, mushr_mujoco_ros::MuSHRROSConnector*>& car_conn,
-    std::map<std::string, mushr_mujoco_ros::BodyROSConnector*>& body_conn)
-{
-    for (auto cc : car_conn)
-    {
-        cc.second->send_state();
-    }
-    for (auto bc : body_conn)
-    {
-        bc.second->send_state();
-    }
-}
 
 void set_body_state(
     mjData* d,
@@ -72,22 +37,110 @@ void set_body_state(
     }
 }
 
-bool reset_sim_cb(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+class SrvResponder
 {
-    mjModel* m = mjglobal::mjmodel();
-    mjData* d = mjglobal::mjdata_lock();
+  public:
+    SrvResponder(
+        std::map<std::string, mushr_mujoco_ros::MuSHRROSConnector*>& c,
+        std::map<std::string, mushr_mujoco_ros::BodyROSConnector*>& b)
+      : car_conn{c}, body_conn{b}
+    {
+    }
 
-    mushr_mujoco_util::reset(m, d);
+    bool step(
+        mushr_mujoco_ros::Step::Request& req, mushr_mujoco_ros::Step::Response& res)
+    {
+        mjModel* m = mjglobal::mjmodel();
+        mjData* d = mjglobal::mjdata_lock();
+        float maxrate = 60.0;
 
-    mjglobal::mjdata_unlock();
-    return true;
-}
+        mjtNum vel = req.ctrl.drive.speed;
+        mjtNum steering_angle = req.ctrl.drive.steering_angle;
+
+        mjtNum simstart = d->time;
+
+        /* ROS_INFO_THROTTLE(1, "simstart %f, vel %f, steering_angle %f", simstart, vel,
+         * steering_angle); */
+        /* set_body_state(d, car_conn, body_conn, res.body_state); */
+        /* for (int i = 0; i < res.body_state.states.size(); i++) */
+        /* { */
+        /*     auto name = res.body_state.states[i].name; */
+        /*     auto pose = res.body_state.states[i].pose; */
+        /*     ROS_INFO_THROTTLE(1, "%s x %f, y %f, q(%f, %f, %f, %f)", */
+        /*             name.c_str(), pose.position.x, pose.position.y, */
+        /*             pose.orientation.w, pose.orientation.x, pose.orientation.y,
+         * pose.orientation.z); */
+        /* } */
+
+        if (!mushr_mujoco_util::is_paused())
+        {
+            while (d->time - simstart < 1.0 / maxrate)
+            {
+                mj_step1(m, d);
+                car_conn["buddy"]->apply_control(d, vel, steering_angle);
+                mj_step2(m, d);
+            }
+        }
+
+        set_body_state(d, car_conn, body_conn, res.body_state);
+        mjglobal::mjdata_unlock();
+        return true;
+    }
+
+    bool get_state(
+        mushr_mujoco_ros::GetState::Request& req,
+        mushr_mujoco_ros::GetState::Response& res)
+    {
+        mjData* d = mjglobal::mjdata_lock();
+        set_body_state(d, car_conn, body_conn, res.body_state);
+        mjglobal::mjdata_unlock();
+        return true;
+    }
+
+    bool reset(
+        mushr_mujoco_ros::Reset::Request& req, mushr_mujoco_ros::Reset::Response& res)
+    {
+        mjModel* m = mjglobal::mjmodel();
+        mjData* d = mjglobal::mjdata_lock();
+
+        ROS_INFO("Reset initiated");
+        if (req.body_names.size() != req.init_state.size())
+        {
+            return false;
+        }
+
+        mushr_mujoco_util::reset(m, d);
+
+        for (int i = 0; i < req.body_names.size(); i++)
+        {
+            auto car = car_conn.find(req.body_names[i]);
+            if (car != car_conn.end())
+            {
+                car->second->set_pose(req.init_state[i]);
+            }
+
+            auto body = body_conn.find(req.body_names[i]);
+            if (body != body_conn.end())
+            {
+                body->second->set_pose(req.init_state[i]);
+            }
+        }
+
+        set_body_state(d, car_conn, body_conn, res.body_state);
+
+        mjglobal::mjdata_unlock();
+        return true;
+    }
+
+  private:
+    std::map<std::string, mushr_mujoco_ros::MuSHRROSConnector*>& car_conn;
+    std::map<std::string, mushr_mujoco_ros::BodyROSConnector*>& body_conn;
+};
 
 int main(int argc, char** argv)
 {
     std::string model_file_path;
-
-    bool do_viz, async_sim;
+    bool do_viz;
 
     ros::init(argc, argv, "mushr_mujoco_ros");
     ros::NodeHandle nh("~");
@@ -178,36 +231,23 @@ int main(int argc, char** argv)
 
     rollout::init(&nh, &car_conn, &body_conn);
 
-    ros::ServiceServer reset_srv = nh.advertiseService("reset", reset_sim_cb);
+    SrvResponder srv_resp(car_conn, body_conn);
+    ros::ServiceServer reset_srv
+        = nh.advertiseService("reset", &SrvResponder::reset, &srv_resp);
+    ros::ServiceServer step_srv
+        = nh.advertiseService("step", &SrvResponder::step, &srv_resp);
+    ros::ServiceServer get_state_srv
+        = nh.advertiseService("state", &SrvResponder::get_state, &srv_resp);
 
     mjModel* m = mjglobal::mjmodel();
     mjData* d = NULL;
 
-    double t = 0.0;
-    const double dt = m->opt.timestep;
-
-    float maxrate = 60.0;
-    ros::Rate simrate(maxrate);
     while (ros::ok())
     {
-        m = mjglobal::mjmodel();
-        d = mjglobal::mjdata_lock();
-
-        step_sim(m, d, maxrate, car_conn, body_conn);
-
-        send_individual_state(car_conn, body_conn);
-
-        mushr_mujoco_ros::BodyStateArray body_state;
-        set_body_state(d, car_conn, body_conn, body_state);
-        body_state_pub.publish(body_state);
-
-        mjglobal::mjdata_unlock();
-
         if (do_viz)
             viz::display();
 
         ros::spinOnce();
-        simrate.sleep();
     }
 
     for (auto cc : car_conn)
