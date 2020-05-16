@@ -63,7 +63,7 @@
     </body>
   </worldbody>
   <actuator>
-    <position class="goose_steering" kp="5.0" name="goose_steering_pos" joint="goose_steering_wheel"/>
+    <position class="goose_steering" kp="0.5" name="goose_steering_pos" joint="goose_steering_wheel"/>
     <velocity kv="100" gear="0.04" forcelimited="true" forcerange="-500 500" name="goose_throttle_velocity" tendon="goose_throttle"/>
   </actuator>
   <equality>

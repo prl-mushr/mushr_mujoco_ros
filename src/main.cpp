@@ -41,11 +41,11 @@ void send_individual_state(
 {
     for (auto cc : car_conn)
     {
-        cc.second->send_state();
+        cc.second->ros_send_state();
     }
     for (auto bc : body_conn)
     {
-        bc.second->send_state();
+        bc.second->ros_send_state();
     }
 }
 
@@ -85,14 +85,20 @@ bool reset_sim_cb(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 
 int main(int argc, char** argv)
 {
-    std::string model_file_path;
+    std::string mj_key_path, model_file_path;
 
     bool do_viz, async_sim;
 
     ros::init(argc, argv, "mushr_mujoco_ros");
     ros::NodeHandle nh("~");
 
-    mushr_mujoco_util::init_mj(&nh);
+    if (!nh.getParam("mj_key", mj_key_path))
+    {
+        ROS_FATAL("%s not set", nh.resolveName("mj_key").c_str());
+        exit(1);
+    }
+
+    mushr_mujoco_util::init_mj(mj_key_path);
 
     if (!nh.getParam("model_file_path", model_file_path))
     {

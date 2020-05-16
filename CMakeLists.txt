@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   ackermann_msgs
   sensor_msgs
+  pybind11_catkin
 )
 
 # pkg-config support
@@ -143,7 +144,7 @@ message(STATUS "MuJoCo lib found at: " ${LIB_MUJOCO})
 catkin_package(
   INCLUDE_DIRS include ${MUJOCO_INCLUDE_DIR}
 #  LIBRARIES mushr_mujoco_ros
-  CATKIN_DEPENDS roscpp message_runtime std_msgs geometry_msgs ackermann_msgs sensor_msgs
+  CATKIN_DEPENDS roscpp message_runtime std_msgs geometry_msgs ackermann_msgs sensor_msgs pybind11_catkin
   DEPENDS yaml-cpp
 )
 
@@ -175,21 +176,34 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-file(GLOB SOURCES src/*.cpp)
-list(FILTER SOURCES EXCLUDE REGEX "src/.*main.cpp$")
-file(GLOB LIB include/*.h)
 
-add_executable(${PROJECT_NAME}_node
-    src/main.cpp
-    ${SOURCES}
-    ${LIB}
+set(SOURCES
+    src/body_ros_connector.cpp
+    src/mjglobal.cpp
+    src/mushr_mujoco_util.cpp
+    src/mushr_ros_connector.cpp
+    src/rollout.cpp
+    src/sensors.cpp
+    src/sim_record.cpp
+    src/sim_state.cpp
+    src/simple_viz.cpp
 )
 
-add_executable(${PROJECT_NAME}_block_buddy
-    src/block_buddy_main.cpp
-    ${SOURCES}
-    ${LIB}
+set(LIB
+    include/body_ros_connector.h
+    include/mjglobal.h
+    include/mushr_mujoco_util.h
+    include/mushr_ros_connector.h
+    include/rollout.h
+    include/sim_record.h
+    include/sim_state.h
+    include/simple_viz.h
+    include/types.h
 )
+
+add_executable(${PROJECT_NAME}_node src/main.cpp ${SOURCES} ${LIB})
+add_executable(${PROJECT_NAME}_block_buddy src/block_buddy_main.cpp ${SOURCES} ${LIB})
+pybind_add_module(mushr_mujoco_py MODULE src/bindings.cpp ${SOURCES} ${LIB})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -201,11 +215,13 @@ add_executable(${PROJECT_NAME}_block_buddy
 # same as for the library above
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(${PROJECT_NAME}_block_buddy ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(mushr_mujoco_py ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_NAME}_node OpenMP::OpenMP_CXX)
     target_link_libraries(${PROJECT_NAME}_block_buddy OpenMP::OpenMP_CXX)
+    target_link_libraries(mushr_mujoco_py PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 # Specify libraries to link a library or executable target against
@@ -221,6 +237,17 @@ target_link_libraries(${PROJECT_NAME}_node
 )
 
 target_link_libraries(${PROJECT_NAME}_block_buddy
+  ${catkin_LIBRARIES}
+  ${LIB_MUJOCO}
+  ${yaml-cpp_LIBRARIES}
+  GL
+  GLU
+  glut
+  libglew.so
+  libglfw.so
+)
+
+target_link_libraries(mushr_mujoco_py PRIVATE
   ${catkin_LIBRARIES}
   ${LIB_MUJOCO}
   ${yaml-cpp_LIBRARIES}

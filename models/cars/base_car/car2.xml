@@ -59,7 +59,7 @@
     </body>
   </worldbody>
   <actuator>
-    <position class="car2_steering" kp="5.0" name="car2_steering_pos" joint="car2_steering_wheel"/>
+    <position class="car2_steering" kp="0.5" name="car2_steering_pos" joint="car2_steering_wheel"/>
     <velocity kv="100" gear="0.04" forcelimited="true" forcerange="-500 500" name="car2_throttle_velocity" tendon="car2_throttle"/>
   </actuator>
   <equality>

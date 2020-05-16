@@ -1,7 +1,11 @@
 #ifndef _MUSHR_MUJOCO_ROS__BODY_ROS_CONNECTOR_H_
 #define _MUSHR_MUJOCO_ROS__BODY_ROS_CONNECTOR_H_
 
+#include <string>
+
+#include "mujoco.h"
 #include "ros/ros.h"
+#include "types.h"
 #include "yaml-cpp/yaml.h"
 
 #include <geometry_msgs/PoseStamped.h>
@@ -15,9 +19,11 @@ class BodyROSConnector
   public:
     BodyROSConnector(ros::NodeHandle* nh, const YAML::Node& e);
 
-    void send_state();
+    void ros_send_state();
     void set_body_state(mushr_mujoco_ros::BodyState& bs);
     void set_pose(const geometry_msgs::Pose& pose);
+    void set_pose(const mushr_mujoco_ros::PoseTuple& pose);
+    void get_pose(mjModel* m, mjData* d, mushr_mujoco_ros::PoseTuple& pose);
 
     const std::string& body_name()
     {
@@ -34,8 +40,9 @@ class BodyROSConnector
     int body_id_;
 
     void initpose_cb(const geometry_msgs::PoseWithCovarianceStampedConstPtr& pose);
-    std::string pvt_name(
-        std::string name); // couldn't get private node handles working, so kludge.
+
+    // couldn't get private node handles working, so kludge.
+    std::string pvt_name(std::string name);
 };
 
 } // namespace mushr_mujoco_ros

@@ -14,29 +14,19 @@ bool mj_sim_pause_for_ctrl = false;
 
 namespace mushr_mujoco_util {
 
-void init_mj(const ros::NodeHandle* nh)
+void init_mj(const std::string& mj_key_path)
 {
-    std::string mj_key_path;
     wordexp_t p;
 
-    if (nh->getParam("mj_key", mj_key_path))
+    // expand home
+    wordexp(mj_key_path.c_str(), &p, 0);
+    if (p.we_wordc != 1)
     {
-        ROS_INFO("Activating MuJoCo...");
-        wordexp(mj_key_path.c_str(), &p, 0);
-        if (p.we_wordc != 1)
-        {
-            ROS_FATAL("Failed to find single key for param '%s'", mj_key_path.c_str());
-            exit(1);
-        }
-        mj_activate(p.we_wordv[0]);
-        wordfree(&p);
-        ROS_INFO("Activated");
+        throw std::runtime_error("Failed to find single key for param " + mj_key_path);
     }
-    else
-    {
-        ROS_FATAL("%s not set", nh->resolveName("mj_key").c_str());
-        exit(1);
-    }
+
+    mj_activate(p.we_wordv[0]);
+    wordfree(&p);
 }
 
 void load_config(
@@ -99,41 +89,23 @@ void mj2ros_site(
     const char* body_name,
     geometry_msgs::Pose& ros_pose)
 {
-    int siteid;
-    mjtNum pos[3], quat[4];
-
-    if ((siteid = mj_name2id(m, mjOBJ_SITE, site_name)) < 0)
-    {
-        ROS_INFO("Couldn't find site '%s' ID", site_name);
-        return;
-    }
-
-    mj2ros_body(m, d, body_name, ros_pose);
-
-    mjtNum bodyq[]{
-        ros_pose.orientation.w,
-        ros_pose.orientation.x,
-        ros_pose.orientation.y,
-        ros_pose.orientation.z,
-    };
-    mju_rotVecQuat(pos, &m->site_pos[3 * siteid], bodyq);
-    ros_pose.position.x += pos[0];
-    ros_pose.position.y += pos[1];
-    ros_pose.position.z += pos[2];
-
-    mju_mulQuat(quat, &m->site_quat[4 * siteid], bodyq);
-    ros_pose.orientation.w = quat[0];
-    ros_pose.orientation.x = quat[1];
-    ros_pose.orientation.y = quat[2];
-    ros_pose.orientation.z = quat[3];
+    mushr_mujoco_ros::PoseTuple pose;
+    mj2pose_site(m, d, site_name, body_name, pose);
+    ros_pose.position.x = std::get<0>(pose);
+    ros_pose.position.y = std::get<1>(pose);
+    ros_pose.position.z = std::get<2>(pose);
+    ros_pose.orientation.w = std::get<3>(pose);
+    ros_pose.orientation.x = std::get<4>(pose);
+    ros_pose.orientation.y = std::get<5>(pose);
+    ros_pose.orientation.z = std::get<6>(pose);
 }
 
-void ros2mj_site(
+void mj2pose_site(
     const mjModel* m,
     mjData* d,
     const char* site_name,
     const char* body_name,
-    geometry_msgs::Pose ros_pose)
+    mushr_mujoco_ros::PoseTuple& pose)
 {
     int siteid;
     mjtNum pos[3], quat[4];
@@ -144,30 +116,39 @@ void ros2mj_site(
         return;
     }
 
+    mj2pose_body(m, d, body_name, pose);
+
     mjtNum bodyq[]{
-        ros_pose.orientation.w,
-        ros_pose.orientation.x,
-        ros_pose.orientation.y,
-        ros_pose.orientation.z,
+        std::get<3>(pose), std::get<4>(pose), std::get<5>(pose), std::get<6>(pose),
     };
     mju_rotVecQuat(pos, &m->site_pos[3 * siteid], bodyq);
-    ros_pose.position.x -= pos[0];
-    ros_pose.position.y -= pos[1];
-
-    // RVIZ publishes in R^2, so we'll have a hard time with Z offsets.
-    // ros_pose.position.z -= pos[2];
+    std::get<0>(pose) += pos[0];
+    std::get<1>(pose) += pos[1];
+    std::get<2>(pose) += pos[2];
 
     mju_mulQuat(quat, &m->site_quat[4 * siteid], bodyq);
-    ros_pose.orientation.w = quat[0];
-    ros_pose.orientation.x = quat[1];
-    ros_pose.orientation.y = quat[2];
-    ros_pose.orientation.z = quat[3];
-
-    ros2mj_body(m, d, body_name, ros_pose);
+    std::get<3>(pose) = quat[0];
+    std::get<4>(pose) = quat[1];
+    std::get<5>(pose) = quat[2];
+    std::get<6>(pose) = quat[3];
 }
 
 void mj2ros_body(
     const mjModel* m, mjData* d, const char* name, geometry_msgs::Pose& ros_pose)
+{
+    mushr_mujoco_ros::PoseTuple pose;
+    mj2pose_body(m, d, name, pose);
+    ros_pose.position.x = std::get<0>(pose);
+    ros_pose.position.y = std::get<1>(pose);
+    ros_pose.position.z = std::get<2>(pose);
+    ros_pose.orientation.w = std::get<3>(pose);
+    ros_pose.orientation.x = std::get<4>(pose);
+    ros_pose.orientation.y = std::get<5>(pose);
+    ros_pose.orientation.z = std::get<6>(pose);
+}
+
+void mj2pose_body(
+    const mjModel* m, mjData* d, const char* name, mushr_mujoco_ros::PoseTuple& pose)
 {
     int bodyid, jntid, jntqposid;
 
@@ -180,17 +161,94 @@ void mj2ros_body(
     jntid = m->body_jntadr[bodyid];
     jntqposid = m->jnt_qposadr[jntid];
 
-    ros_pose.position.x = d->qpos[jntqposid + 0];
-    ros_pose.position.y = d->qpos[jntqposid + 1];
-    ros_pose.position.z = d->qpos[jntqposid + 2];
-    ros_pose.orientation.w = d->qpos[jntqposid + 3];
-    ros_pose.orientation.x = d->qpos[jntqposid + 4];
-    ros_pose.orientation.y = d->qpos[jntqposid + 5];
-    ros_pose.orientation.z = d->qpos[jntqposid + 6];
+    std::get<0>(pose) = d->qpos[jntqposid + 0];
+    std::get<1>(pose) = d->qpos[jntqposid + 1];
+    std::get<2>(pose) = d->qpos[jntqposid + 2];
+    std::get<3>(pose) = d->qpos[jntqposid + 3];
+    std::get<4>(pose) = d->qpos[jntqposid + 4];
+    std::get<5>(pose) = d->qpos[jntqposid + 5];
+    std::get<6>(pose) = d->qpos[jntqposid + 6];
+}
+
+void ros2mj_site(
+    const mjModel* m,
+    mjData* d,
+    const char* site_name,
+    const char* body_name,
+    geometry_msgs::Pose ros_pose)
+{
+    pose2mj_site(
+        m,
+        d,
+        site_name,
+        body_name,
+        std::make_tuple(
+            ros_pose.position.x,
+            ros_pose.position.y,
+            ros_pose.position.z,
+            ros_pose.orientation.w,
+            ros_pose.orientation.x,
+            ros_pose.orientation.y,
+            ros_pose.orientation.z));
+}
+
+void pose2mj_site(
+    const mjModel* m,
+    mjData* d,
+    const char* site_name,
+    const char* body_name,
+    mushr_mujoco_ros::PoseTuple pose)
+{
+    int siteid;
+    mjtNum pos[3], quat[4];
+
+    if ((siteid = mj_name2id(m, mjOBJ_SITE, site_name)) < 0)
+    {
+        ROS_INFO("Couldn't find site '%s' ID", site_name);
+        return;
+    }
+
+    mjtNum bodyq[]{
+        std::get<3>(pose), std::get<4>(pose), std::get<5>(pose), std::get<6>(pose)};
+
+    mju_rotVecQuat(pos, &m->site_pos[3 * siteid], bodyq);
+    std::get<0>(pose) -= pos[0];
+    std::get<1>(pose) -= pos[1];
+
+    // RVIZ publishes in R^2, so we'll have a hard time with Z offsets.
+    // std::get<1>(pose) -= pos[2];
+
+    mju_mulQuat(quat, &m->site_quat[4 * siteid], bodyq);
+    std::get<3>(pose) = quat[0];
+    std::get<4>(pose) = quat[1];
+    std::get<5>(pose) = quat[2];
+    std::get<6>(pose) = quat[3];
+
+    pose2mj_body(m, d, body_name, pose);
 }
 
 void ros2mj_body(
     const mjModel* m, mjData* d, const char* name, const geometry_msgs::Pose& ros_pose)
+{
+    pose2mj_body(
+        m,
+        d,
+        name,
+        std::make_tuple(
+            ros_pose.position.x,
+            ros_pose.position.y,
+            ros_pose.position.z,
+            ros_pose.orientation.w,
+            ros_pose.orientation.x,
+            ros_pose.orientation.y,
+            ros_pose.orientation.z));
+}
+
+void pose2mj_body(
+    const mjModel* m,
+    mjData* d,
+    const char* name,
+    const mushr_mujoco_ros::PoseTuple& pose)
 {
     int bodyid, jntid, jntqposid, jntdofid;
 
@@ -203,13 +261,13 @@ void ros2mj_body(
     jntid = m->body_jntadr[bodyid];
     jntqposid = m->jnt_qposadr[jntid];
 
-    d->qpos[jntqposid + 0] = ros_pose.position.x;
-    d->qpos[jntqposid + 1] = ros_pose.position.y;
-    d->qpos[jntqposid + 2] = ros_pose.position.z;
-    d->qpos[jntqposid + 3] = ros_pose.orientation.w;
-    d->qpos[jntqposid + 4] = ros_pose.orientation.x;
-    d->qpos[jntqposid + 5] = ros_pose.orientation.y;
-    d->qpos[jntqposid + 6] = ros_pose.orientation.z;
+    d->qpos[jntqposid + 0] = std::get<0>(pose);
+    d->qpos[jntqposid + 1] = std::get<1>(pose);
+    d->qpos[jntqposid + 2] = std::get<2>(pose);
+    d->qpos[jntqposid + 3] = std::get<3>(pose);
+    d->qpos[jntqposid + 4] = std::get<4>(pose);
+    d->qpos[jntqposid + 5] = std::get<5>(pose);
+    d->qpos[jntqposid + 6] = std::get<6>(pose);
 
     jntdofid = m->jnt_dofadr[jntid];
     mju_zero(&d->qvel[jntdofid], 6);

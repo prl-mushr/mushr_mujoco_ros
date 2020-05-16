@@ -1,4 +1,5 @@
 #include <thread>
+#include <math.h>
 #include <omp.h>
 
 #include "geometry_msgs/Pose.h"
@@ -135,7 +136,7 @@ void one_rollout(
     mushr_mujoco_ros::BodyROSConnector* block)
 {
     int t;
-    int niter = static_cast<int>(dt / m->opt.timestep);
+    int niter = static_cast<int>(round(dt / m->opt.timestep));
     int step;
 
     // Reserve T poses.

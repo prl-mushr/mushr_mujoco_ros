@@ -9,10 +9,13 @@ namespace mushr_mujoco_ros {
 
 void MuSHRROSConnector::init_sensors()
 {
-    imu_pub_ = nh_->advertise<sensor_msgs::Imu>(
-        mushr_mujoco_util::pvt_name(body_name_, "car_imu"), 10);
-    velocity_pub_ = nh_->advertise<geometry_msgs::Vector3Stamped>(
-        mushr_mujoco_util::pvt_name(body_name_, "velocimeter"), 10);
+    if (nh_)
+    {
+        imu_pub_ = nh_->advertise<sensor_msgs::Imu>(
+            mushr_mujoco_util::pvt_name(body_name_, "car_imu"), 10);
+        velocity_pub_ = nh_->advertise<geometry_msgs::Vector3Stamped>(
+            mushr_mujoco_util::pvt_name(body_name_, "velocimeter"), 10);
+    }
 
     mjModel* m = mjglobal::mjmodel();
 
@@ -49,15 +52,13 @@ void MuSHRROSConnector::init_sensors()
         vel_noise_ = m->sensor_noise[vel_idx_];
         vel_addr_ = m->sensor_adr[vel_idx_];
     }
-
-    ROS_INFO("Accelerometer addr = %d, gyroscope addr = %d", accel_addr_, gyro_addr_);
-    ROS_INFO(
-        "Accelerometer noise = %f, gyroscope noise = %f", accel_noise_, gyro_noise_);
 }
 
 void MuSHRROSConnector::send_sensor_state()
 {
     if (accel_idx_ < 0 && gyro_idx_ < 0 && vel_idx_ < 0)
+        return;
+    if (!nh_)
         return;
 
     sensor_msgs::Imu msg;

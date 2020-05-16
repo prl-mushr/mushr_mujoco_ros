@@ -7,9 +7,11 @@
     <!-- Could be racecar-mit, racecar-uw-tx2, or racecar-uw-nano -->
     <arg name="racecar_version" default="racecar-uw-nano" />
 
+    <!--
     <include file="$(find mushr_sim)/launch/keyboard_teleop.launch.xml"/>
 
     <node pkg="topic_tools" type="relay" name="keyboard_teleop_relay" args="/mux/ackermann_cmd_mux/input/teleop /mushr_mujoco_ros/buddy/control" />
+    -->
 
     <!--launch-prefix="xterm -e gdb - -args" -->
     <node pkg="mushr_mujoco_ros" name="mushr_mujoco_ros" type="mushr_mujoco_ros_block_buddy" output="screen">
@@ -17,6 +19,9 @@
         <param name="model_file_path" value="$(find mushr_mujoco_ros)/models/$(arg environment).xml" />
         <param name="config_file_path" value="$(find mushr_mujoco_ros)/config/$(arg environment).yaml" />
         <param name="viz" value="true" />
+        <param name="record" value="false" />
+        <param name="record_camera_name" value="buddy_third_person" />
+        <param name="record_out_file" value="$(find mushr_mujoco_ros)/recordings/rgb.out" />
     </node>
 
     <!-- Launch  map server-->

@@ -5,13 +5,14 @@
 #include "ros/ros.h"
 #include "yaml-cpp/yaml.h"
 
-#include "body_ros_connector.h"
+#include "types.h"
 
 #include <ackermann_msgs/AckermannDriveStamped.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/Quaternion.h>
+#include <mushr_mujoco_ros/BodyState.h>
 #include <sensor_msgs/Imu.h>
 #include <std_srvs/Empty.h>
 
@@ -24,9 +25,11 @@ class MuSHRROSConnector
 
     void mujoco_controller();
     void apply_control(mjData* d, mjtNum vel, mjtNum steering_angle);
-    void send_state();
+    void ros_send_state();
     void set_body_state(mushr_mujoco_ros::BodyState& bs);
     void set_pose(const geometry_msgs::Pose& pose);
+    void set_pose(const mushr_mujoco_ros::PoseTuple& pose);
+    void get_pose(mjModel* m, mjData* d, mushr_mujoco_ros::PoseTuple& pose);
 
     const std::string& body_name()
     {

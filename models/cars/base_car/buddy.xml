@@ -59,7 +59,7 @@
     </body>
   </worldbody>
   <actuator>
-    <position class="buddy_steering" kp="5.0" name="buddy_steering_pos" joint="buddy_steering_wheel"/>
+    <position class="buddy_steering" kp="0.5" name="buddy_steering_pos" joint="buddy_steering_wheel"/>
     <velocity kv="100" gear="0.04" forcelimited="true" forcerange="-500 500" name="buddy_throttle_velocity" tendon="buddy_throttle"/>
   </actuator>
   <equality>

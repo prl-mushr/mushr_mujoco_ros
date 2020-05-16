@@ -13,13 +13,16 @@ MuSHRROSConnector::MuSHRROSConnector(ros::NodeHandle* nh, const YAML::Node& e)
     mushr_mujoco_util::load_config(
         e, body_name_, pose_topic, initpose_topic, parent_body_name_);
 
-    pose_pub_ = nh_->advertise<geometry_msgs::PoseStamped>(
-        mushr_mujoco_util::pvt_name(body_name_, pose_topic), 10);
-    initpose_sub_ = nh_->subscribe(
-        mushr_mujoco_util::pvt_name(body_name_, initpose_topic),
-        1,
-        &MuSHRROSConnector::initpose_cb,
-        this);
+    if (nh_)
+    {
+        pose_pub_ = nh_->advertise<geometry_msgs::PoseStamped>(
+            mushr_mujoco_util::pvt_name(body_name_, pose_topic), 10);
+        initpose_sub_ = nh_->subscribe(
+            mushr_mujoco_util::pvt_name(body_name_, initpose_topic),
+            1,
+            &MuSHRROSConnector::initpose_cb,
+            this);
+    }
 
     mjModel* m = mjglobal::mjmodel();
 
@@ -31,11 +34,14 @@ MuSHRROSConnector::MuSHRROSConnector(ros::NodeHandle* nh, const YAML::Node& e)
     {
         control_topic = e["control_topic"].as<std::string>();
     }
-    control_sub_ = nh_->subscribe(
-        mushr_mujoco_util::pvt_name(body_name_, control_topic),
-        1,
-        &MuSHRROSConnector::control_cb,
-        this);
+    if (nh_)
+    {
+        control_sub_ = nh_->subscribe(
+            mushr_mujoco_util::pvt_name(body_name_, control_topic),
+            1,
+            &MuSHRROSConnector::control_cb,
+            this);
+    }
 
     std::string tv = car_ref("throttle_velocity");
     std::string sp = car_ref("steering_pos");
@@ -49,21 +55,28 @@ MuSHRROSConnector::MuSHRROSConnector(ros::NodeHandle* nh, const YAML::Node& e)
     init_sensors();
 }
 
-void MuSHRROSConnector::send_state()
+void MuSHRROSConnector::ros_send_state()
 {
-    mjModel* m = mjglobal::mjmodel();
-    mjData* d = mjglobal::mjdata_lock();
+    if (nh_)
+    {
+        mjModel* m = mjglobal::mjmodel();
+        mjData* d = mjglobal::mjdata_lock();
 
-    geometry_msgs::PoseStamped ros_pose;
+        geometry_msgs::PoseStamped ros_pose;
 
-    ros_pose.header.frame_id = parent_body_name_;
-    mushr_mujoco_util::mj2ros_site(
-        m, d, base_link_site_name_.c_str(), body_name_.c_str(), ros_pose.pose);
+        ros_pose.header.frame_id = parent_body_name_;
+        mushr_mujoco_util::mj2ros_site(
+            m, d, base_link_site_name_.c_str(), body_name_.c_str(), ros_pose.pose);
 
-    pose_pub_.publish(ros_pose);
+        pose_pub_.publish(ros_pose);
 
-    mjglobal::mjdata_unlock();
-    send_sensor_state();
+        mjglobal::mjdata_unlock();
+        send_sensor_state();
+    }
+    else
+    {
+        throw std::runtime_error("No node handle to send state on");
+    }
 }
 
 void MuSHRROSConnector::set_body_state(mushr_mujoco_ros::BodyState& bs)
@@ -81,6 +94,13 @@ void MuSHRROSConnector::set_body_state(mushr_mujoco_ros::BodyState& bs)
     get_velocimeter(d, bs.velocity);
 
     mjglobal::mjdata_unlock();
+}
+
+void MuSHRROSConnector::get_pose(
+    mjModel* m, mjData* d, mushr_mujoco_ros::PoseTuple& pose)
+{
+    mushr_mujoco_util::mj2pose_site(
+        m, d, base_link_site_name_.c_str(), body_name_.c_str(), pose);
 }
 
 void MuSHRROSConnector::mujoco_controller()
@@ -108,18 +128,18 @@ void MuSHRROSConnector::set_pose(const geometry_msgs::Pose& pose)
     mjModel* m = mjglobal::mjmodel();
     mjData* d = mjglobal::mjdata_lock();
 
-    ROS_INFO(
-        "[%s]   init pose: Position(%.3f, %.3f, %.3f), Orientation(%.3f, "
-        "%.3f, %.3f, %.3f)",
-        body_name_.c_str(),
-        pose.position.x,
-        pose.position.y,
-        pose.position.z,
-        pose.orientation.x,
-        pose.orientation.y,
-        pose.orientation.z,
-        pose.orientation.w);
     mushr_mujoco_util::ros2mj_site(
+        m, d, base_link_site_name_.c_str(), body_name_.c_str(), pose);
+
+    mjglobal::mjdata_unlock();
+}
+
+void MuSHRROSConnector::set_pose(const PoseTuple& pose)
+{
+    mjModel* m = mjglobal::mjmodel();
+    mjData* d = mjglobal::mjdata_lock();
+
+    mushr_mujoco_util::pose2mj_site(
         m, d, base_link_site_name_.c_str(), body_name_.c_str(), pose);
 
     mjglobal::mjdata_unlock();

@@ -19,6 +19,7 @@
   <depend>std_msgs</depend>
   <depend>ackermann_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>pybind11_catkin</depend>
 
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
