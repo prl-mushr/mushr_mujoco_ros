@@ -135,7 +135,7 @@ int main(int argc, char** argv)
         body_state.header.stamp = ros::Time::now();
 
         int i = 0;
-        for (int j = 0; i < car_conn.size(); i++)
+        for (int j = 0; i < car_conn.size(); j++)
         {
             auto cc = car_conn[j];
             cc->send_state();
