@@ -1,4 +1,4 @@
-# MuJoCo <-> ROS Simulator for MuSHR
+# MuJoCo ROS Simulator for MuSHR
 
 ## Requirements
 - [The MuSHR Simulator](https://github.com/prl-mushr/mushr_sim) (for the keyboard teleop module).
@@ -10,6 +10,7 @@
 When building `CMakeLists.txt` assumes the MuJoCo library is located at `$HOME/.mujoco/mujoco200_linux`. You can set the MuJoCo location in the environment variable `MUJOCO_LOCATION`. `USE_GL` can be set to 0 or 1 depending on whether you want to compile with GL.
 
 ## Usage
+See the following [tutorial](https://mushr.io/tutorials/mujoco/) on setting up and installing the sim. There is another simple tutorial for simple control in the sim [here](https://mushr.io/tutorials/mujoco_figure8/).
 
 ### MuJoCo
 #### Car models
