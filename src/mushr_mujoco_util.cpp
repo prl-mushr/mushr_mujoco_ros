@@ -17,24 +17,25 @@ void init_mj(const ros::NodeHandle* nh)
     std::string mj_key_path;
     wordexp_t p;
 
-    if (nh->getParam("mj_key", mj_key_path))
-    {
-        ROS_INFO("Activating MuJoCo...");
-        wordexp(mj_key_path.c_str(), &p, 0);
-        if (p.we_wordc != 1)
-        {
-            ROS_FATAL("Failed to find single key for param '%s'", mj_key_path.c_str());
-            exit(1);
-        }
-        mj_activate(p.we_wordv[0]);
-        wordfree(&p);
-        ROS_INFO("Activated");
-    }
-    else
-    {
-        ROS_FATAL("%s not set", nh->resolveName("mj_key").c_str());
-        exit(1);
-    }
+    // This code is from older versions of mujoco which required a license.
+    // if (nh->getParam("mj_key", mj_key_path))
+    // {
+    //     ROS_INFO("Activating MuJoCo...");
+    //     wordexp(mj_key_path.c_str(), &p, 0);
+    //     if (p.we_wordc != 1)
+    //     {
+    //         ROS_FATAL("Failed to find single key for param '%s'", mj_key_path.c_str());
+    //         exit(1);
+    //     }
+    //     mj_activate(p.we_wordv[0]);
+    //     wordfree(&p);
+    //     ROS_INFO("Activated");
+    // }
+    // else
+    // {
+    //     ROS_FATAL("%s not set", nh->resolveName("mj_key").c_str());
+    //     exit(1);
+    // }
 }
 
 mjtNum mj_name2id_ordie(const mjModel* m, int type, const std::string& name)

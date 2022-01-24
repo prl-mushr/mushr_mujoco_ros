@@ -1,7 +1,7 @@
 #ifndef _MUSHR_MUJOCO_ROS__SIMPLE_VIZ_H_
 #define _MUSHR_MUJOCO_ROS__SIMPLE_VIZ_H_
 
-#include "glfw3.h"
+#include <GLFW/glfw3.h>
 #include "mujoco.h"
 #include "ros/ros.h"
 

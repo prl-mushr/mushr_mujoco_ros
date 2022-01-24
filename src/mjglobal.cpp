@@ -23,7 +23,7 @@ int init_model(const char* model_file_path, char** error)
     size_t model_file_len = strnlen(model_file_path, 1000);
     if (model_file_len > 4 && !strncmp(model_file_path + model_file_len - 4, ".mjb", 4))
         m = mj_loadModel(model_file_path, 0);
-    else
+    else 
         m = mj_loadXML(model_file_path, 0, *error, 1000);
     if (!m)
         return 1;
