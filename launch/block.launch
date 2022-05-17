@@ -19,12 +19,12 @@
 
     <!-- Launch  map server-->
     <group if="$(arg map_server)">
-        <include file="$(find mushr_sim)/launch/map_server.launch">
+        <include file="$(find mushr_base)/launch/includes/map_server.launch">
             <arg name="map" value="$(arg map_file)" />
         </include>
     </group>
 
     <!-- Launch  model/state publishers-->
-    <param name="robot_description"
-         textfile="$(find mushr_description)/robots/$(arg racecar_version).urdf"/>
+    <!-- <param name="robot_description"
+         textfile="$(find mushr_description)/robots/$(arg racecar_version).urdf"/> -->
 </launch>

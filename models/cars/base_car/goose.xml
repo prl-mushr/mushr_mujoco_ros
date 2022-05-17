@@ -37,23 +37,23 @@
         <joint class="goose_steering" name="goose_wheel_fl_steering"/>
         <joint class="goose_throttle" name="goose_wheel_fl_throttle"/>
         <geom class="goose_wheel"/>
-        <geom class="goose_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 0.3"/>
+        <geom class="goose_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="0 1 0 0.3"/>
       </body>
       <body name="goose_wheel_fr" pos="0.1385 -0.115 0.0488">
         <joint class="goose_steering" name="goose_wheel_fr_steering"/>
         <joint class="goose_throttle" name="goose_wheel_fr_throttle"/>
         <geom class="goose_wheel"/>
-        <geom class="goose_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 0.3"/>
+        <geom class="goose_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="0 1 0 0.3"/>
       </body>
       <body name="goose_wheel_bl" pos="-0.158 0.115 0.0488">
         <joint class="goose_throttle" name="goose_wheel_bl_throttle"/>
         <geom class="goose_wheel"/>
-        <geom class="goose_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 0.3"/>
+        <geom class="goose_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="0 1 0 0.3"/>
       </body>
       <body name="goose_wheel_br" pos="-0.158 -0.115 0.0488">
         <joint class="goose_throttle" name="goose_wheel_br_throttle"/>
         <geom class="goose_wheel"/>
-        <geom class="goose_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 0.3"/>
+        <geom class="goose_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="0 1 0 0.3"/>
       </body>
     </body>
   </worldbody>

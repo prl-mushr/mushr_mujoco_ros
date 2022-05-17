@@ -31,6 +31,7 @@ The connector's configuration tells the module what bodies to publish poses for 
  - `control_topic`: _Optional, default: "controls"._ What topic control messages will be recieved on.
  - `pose_topic`: _Optional, default: "pose"._ What topic pose messages will be recieved on.
  - `initpose_topic`: _Optional, default: "initialpose"._ What topic pose messages will be recieved on.
+ - `use_accel_control`: _Optional, default: "false". Whether to use velocity or acceleration to control throttle.
 
 Each of these topics will be relative to the car, i.e. `/{ROS node name}/{car name}/{topic}`. You can specify absolute paths by adding a `/` to the begining of the topic name.
 

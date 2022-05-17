@@ -7,12 +7,15 @@
   </asset>
   <default>
       <default class="buddy_wheel">
-      <geom fitscale="1.2" type="ellipsoid" friction="2 0.005 0.0001" contype="1" conaffinity="0" mesh="buddy_mushr_wheel" mass="0.498952"/>
+      <geom fitscale="1.2" type="ellipsoid" friction="1.0 0.005 0.0001" contype="1" conaffinity="0" mesh="buddy_mushr_wheel" mass="0.498952"/>
     </default>
     <default class="buddy_steering">
       <joint type="hinge" axis="0 0 1" limited="true" frictionloss="0.01" damping="0.001" armature="0.0002" range="-0.38 0.38"/>
     </default>
     <default class="buddy_throttle">
+      <joint type="hinge" axis="0 1 0" frictionloss="0.001" damping="0.01" armature="0.01" limited="false"/>
+    </default>
+    <default class="buddy_current">
       <joint type="hinge" axis="0 1 0" frictionloss="0.001" damping="0.01" armature="0.01" limited="false"/>
     </default>
   </default>
@@ -35,32 +38,42 @@
 
       <body name="buddy_wheel_fl" pos="0.1385 0.115 0.0488">
         <joint class="buddy_steering" name="buddy_wheel_fl_steering"/>
+        <!-- buddy_throttle if using speed control, buddy_current for accel-->
         <joint class="buddy_throttle" name="buddy_wheel_fl_throttle"/>
         <geom class="buddy_wheel"/>
         <geom class="buddy_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 0.3"/>
       </body>
       <body name="buddy_wheel_fr" pos="0.1385 -0.115 0.0488">
         <joint class="buddy_steering" name="buddy_wheel_fr_steering"/>
+        <!-- buddy_throttle if using speed control, buddy_current for accel-->
         <joint class="buddy_throttle" name="buddy_wheel_fr_throttle"/>
         <geom class="buddy_wheel"/>
         <geom class="buddy_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 0.3"/>
       </body>
       <body name="buddy_wheel_bl" pos="-0.158 0.115 0.0488">
+        <!-- buddy_throttle if using speed control, buddy_current for accel-->
         <joint class="buddy_throttle" name="buddy_wheel_bl_throttle"/>
         <geom class="buddy_wheel"/>
         <geom class="buddy_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 0.3"/>
       </body>
       <body name="buddy_wheel_br" pos="-0.158 -0.115 0.0488">
+        <!-- buddy_throttle if using speed control, buddy_current for accel-->
         <joint class="buddy_throttle" name="buddy_wheel_br_throttle"/>
         <geom class="buddy_wheel"/>
         <geom class="buddy_wheel" type="mesh" contype="0" conaffinity="0" group="1" rgba="1 1 1 0.3"/>
       </body>
     </body>
   </worldbody>
+  <!-- Uncomment the following line if using speed control -->
   <actuator>
     <position class="buddy_steering" kp="25.0" name="buddy_steering_pos" joint="buddy_steering_wheel"/>
     <velocity kv="100" gear="0.04" forcelimited="true" forcerange="-500 500" name="buddy_throttle_velocity" tendon="buddy_throttle"/>
   </actuator>
+  <!-- Uncomment the following line if using acceleration control -->
+  <!-- <actuator>
+    <position class="buddy_steering" kp="25.0" name="buddy_steering_pos" joint="buddy_steering_wheel"/>
+    <velocity kv="100" gear="0.04" forcelimited="true" forcerange="-500 500" name="buddy_throttle_acceleration" tendon="buddy_current"/>
+  </actuator> -->
   <equality>
     <!-- taylor expansion of delta_l = arctan(L/(L/tan(delta) - W/2)) with L,W in reference to kinematic car model -->
     <joint joint1="buddy_wheel_fl_steering" joint2="buddy_steering_wheel" polycoef="0 1 0.375 0.140625 -0.0722656"/>
@@ -70,6 +83,14 @@
   </equality>
   <tendon>
     <fixed name="buddy_throttle">
+      <joint joint="buddy_wheel_fl_throttle" coef="0.25"/>
+      <joint joint="buddy_wheel_fr_throttle" coef="0.25"/>
+      <joint joint="buddy_wheel_bl_throttle" coef="0.25"/>
+      <joint joint="buddy_wheel_br_throttle" coef="0.25"/>
+    </fixed>
+  </tendon>
+  <tendon>
+    <fixed name="buddy_current">
       <joint joint="buddy_wheel_fl_throttle" coef="0.25"/>
       <joint joint="buddy_wheel_fr_throttle" coef="0.25"/>
       <joint joint="buddy_wheel_bl_throttle" coef="0.25"/>
