@@ -1,0 +1,28 @@
+# Schema
+# cars:  <-- creates a MuSHRROSConnector instance for a car. Corresponds to a car in the MuJoCo xml
+# - name: ... (required, name of the car)
+#   control_topic : ... (string, optional, default "control")
+#   pose_topic: ...(string, optional, default "pose")
+#   initpose_topic: ... (string, optional, "initialpose")
+# - <...>
+# - <...>
+# bodies: <-- array of geoms to send PoseStamped 6DOF poses on a ROS topic
+# - name: (required, name of body to watch in mujoco)
+#   pose_topic: ...(string, optional, default "pose")
+#   initpose_topic: ... (string, optional, "initialpose")
+# - <...>
+# - <...>
+
+cars:
+- name: buddy
+  control_topic : control
+  pose_topic: pose
+  initpose_topic: initialpose
+- name: goose
+  control_topic : control
+  pose_topic: pose
+  initpose_topic: initialpose
+- name: car1
+  control_topic : control
+  pose_topic: pose
+  initpose_topic: initialpose

@@ -36,9 +36,12 @@ class MuSHRROSConnector : public BodyROSConnector
     mjtNum accel_noise_, gyro_noise_, vel_noise_;
 
     mjtNum velocity_;
+    mjtNum acceleration_;
     mjtNum steering_angle_;
     int velocity_ctrl_idx_;
+    int acceleration_ctrl_idx_;
     int steering_angle_ctrl_idx_;
+    bool use_accel_control_ = false;
 
     void control_cb(const ackermann_msgs::AckermannDriveStampedConstPtr&);
     void initial_pose_cb(const geometry_msgs::PoseWithCovarianceStampedConstPtr&);

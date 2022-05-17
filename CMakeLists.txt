@@ -22,6 +22,8 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PkgConfig)
 pkg_search_module(yaml-cpp REQUIRED yaml-cpp)
 
+find_package(GLEW REQUIRED)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -105,24 +107,32 @@ generate_messages(
 set(USE_GL 1) #USE_GL if we are to use GL with mujoco
 
 if(NOT DEFINED $ENV{MUJOCO_LOCATION})
-	set(MUJOCO_LOCATION $ENV{HOME}/.mujoco/mujoco200_linux)
+  # List all folders in .mujoco.
+  file(GLOB MUJOCO_FOLDERS "$ENV{HOME}/.mujoco/mujoco-*")
+  # Sort descending so latest version is first.
+  list(SORT MUJOCO_FOLDERS)
+  list(REVERSE MUJOCO_FOLDERS)
+  list(GET MUJOCO_FOLDERS 0 MUJOCO_FOLDER)
+
+  set(MUJOCO_LOCATION "${MUJOCO_FOLDER}")
 else()
-	set(MUJOCO_LOCATION $ENV{MUJOCO_LCOATION})
+	set(MUJOCO_LOCATION $ENV{MUJOCO_LOCATION})
 endif()
 
 message(STATUS ${MUJOCO_LOCATION})
 
 set(MUJOCO_INCLUDE_DIR ${MUJOCO_LOCATION}/include)
-set(MUJOCO_BIN ${MUJOCO_LOCATION}/bin)
+set(MUJOCO_LIB ${MUJOCO_LOCATION}/lib)
 
-link_directories(${MUJOCO_BIN})
+link_directories(${MUJOCO_LIB})
 
 #Finding main mujoco library
 if(${USE_GL})
-file(GLOB LIB_MUJOCO ${MUJOCO_BIN}/libmujoco[0-9][0-9][0-9].so)
+file(GLOB LIB_MUJOCO ${MUJOCO_LIB}/libmujoco.so)
 else()
-file(GLOB LIB_MUJOCO ${MUJOCO_BIN}/libmujoco[0-9][0-9][0-9]nogl.so)
+file(GLOB LIB_MUJOCO ${MUJOCO_LIB}/libmujoco_nogl.so)
 endif()
+file(GLOB LIB_GLEW ${MUJOCO_LIB}/libglew.so)
 #Showing mujoco library found
 message(STATUS "MuJoCo lib found at: " ${LIB_MUJOCO})
 
@@ -153,6 +163,7 @@ message(STATUS ${catkin_INCLUDE_DIRS})
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${GLEW_INCLUDE_DIRS}
   ${MUJOCO_INCLUDE_DIR}
   ${yaml-cpp_INCLUDE_DIRS}
 )
@@ -203,7 +214,7 @@ target_link_libraries(${PROJECT_NAME}_node
   GL
   GLU
   glut
-  libglew.so
+  ${LIB_GLEW}
   libglfw.so
 )
 
